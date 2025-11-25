@@ -15,6 +15,7 @@
     <li><a href="genres.php">Genres</a></li>
     <li><a href="ratings.php">Age Ratings</a></li>
     <li><a href="streaming.php">Streaming Services</a></li>
+    <li><a href="Import_Data.php">Import Data (CSV)</a></li>
 </ul>
 </body>
 
