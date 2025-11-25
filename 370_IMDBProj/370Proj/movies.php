@@ -2,6 +2,7 @@
 
 
     <!DOCTYPE html>
+    <link rel="stylesheet" href="lux.min.css">
     <html>
     <head><title>Movies</title></head>
     <body>
@@ -80,4 +81,5 @@
 <?php
 
 $connection->close();
+
 ?>
