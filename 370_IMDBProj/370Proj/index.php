@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<link rel="stylesheet" href="lux.min.css">
 <html>
 <head>
     <title>Movie Database</title>
@@ -16,4 +17,5 @@
     <li><a href="streaming.php">Streaming Services</a></li>
 </ul>
 </body>
+
 </html>
