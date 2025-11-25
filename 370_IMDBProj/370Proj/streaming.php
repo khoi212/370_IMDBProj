@@ -1,6 +1,7 @@
 <?php require "database.php"; ?>
 
     <!DOCTYPE html>
+    <link rel="stylesheet" href="lux.min.css">
     <html>
     <head><title>Streaming Services</title></head>
     <body>
@@ -50,5 +51,6 @@
 
     </body>
     </html>
+
 
 <?php $connection->close(); ?>
