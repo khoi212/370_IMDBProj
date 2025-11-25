@@ -3,6 +3,7 @@ require "database.php";
 ?>
 
 <!DOCTYPE html>
+<link rel="stylesheet" href="lux.min.css">
 <html>
 <head>
     <title>Genres</title>
@@ -64,4 +65,5 @@ ORDER BY movie_title");
 <?php
 $connection->close();
 ?>
+
 
