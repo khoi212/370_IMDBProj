@@ -22,6 +22,11 @@ Katie McLaughlin, Lakiya, Gelo, Aaron, Dalston, Khoi
      | Superbad                | 7.6         |
      |_______________________________________|
 */
+SELECT genre, movie title, avg rating, year
+FROM movies table                                   **need to combine(join) movies and genre tables
+ORDER BY genre, avg rating
+
+
 /* ---------------------------------- Lakiya ---------------------------------- */
 /*
      Inception
