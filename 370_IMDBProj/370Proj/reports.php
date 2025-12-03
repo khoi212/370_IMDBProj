@@ -31,20 +31,20 @@ ORDER BY genre, avg rating
 /*
      Inception
      ________________________________________________
-     | actor_name               | role              |
+     | actor_name               | DOB               |
      |__________________________|___________________|
-     | Leonardo DiCaprio        | Cobb              |
-     | Joseph Gordon-Levitt     | Arthur            |
-     | Ellen Page               | Ariadne           |
+     | Leonardo DiCaprio        | 1988-11-06        |
+     | Joseph Gordon-Levitt     | 1988-11-06        |
+     | Ellen Page               | 1988-11-06        |
      |__________________________|___________________|
 
      The Matrix
      ________________________________________________
-     | actor_name               | role              |
+     | actor_name               | DOB               |
      |__________________________|___________________|
-     | Keanu Reeves             | Neo               |
-     | Laurence Fishburne       | Morpheus          |
-     | Carrie-Anne Moss         | Trinity           |
+     | Keanu Reeves             | 1988-11-06        |
+     | Laurence Fishburne       | 1988-11-06        |
+     | Carrie-Anne Moss         | 1988-11-06        |
      |__________________________|___________________|
 */
 /* ---------------------------------- Angelo ---------------------------------- */
