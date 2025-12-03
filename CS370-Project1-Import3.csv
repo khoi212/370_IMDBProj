@@ -2,11 +2,14 @@ genre_code,genre_description
 ROM,Romance
 HOR,Horror
 COM,Comedy
+
 rating_code,rating_description
 PG,Parental Guidance
 PG13,Parents Strongly Cautioned
 R,Restricted
+
 language_code,language_description
 ENG,English
 SPA,Spanish
 FRE,French
+
