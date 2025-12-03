@@ -14,36 +14,47 @@ require "Database.php";   // uses $connection from your existing file
 <h1>Import CSV Data</h1>
 
 <?php
-// If no form submission yet, just show the form
+// If no form submission yet, just show the THREE import forms
 if (!isset($_POST['submit'])): ?>
 
+    <h2>Import 1: Movies</h2>
     <form action="Import_Data.php" method="post" enctype="multipart/form-data" class="form-group">
+        <input type="hidden" name="table" value="movies">
         <div class="form-group">
-            <label for="table">Select table to import into:</label>
-            <select name="table" id="table" class="form-control" required>
-                <option value="">-- Choose Table --</option>
-                <!-- values are the *actual* table names from the DB -->
-                <option value="actor">Actors</option>
-                <option value="director">Directors</option>
-                <option value="genre">Genres</option>
-                <option value="rating">Ratings</option>
-                <option value="streaming">Streaming Platforms</option>
-                <option value="movies">Movies</option>
-                <option value="casting">Casting (movie ↔ actor)</option>
-                <option value="movie_streaming">Movie_Streaming (movie ↔ streaming)</option>
-                <option value="award">Awards</option>
-                <option value="movie_awards">Movie_Awards (movie ↔ award)</option>
-                <option value="language">Language</option>
-                <option value="based_on_book">Based_On_Book</option>
-            </select>
+            <label for="movies_csv">Movies CSV
+                <small>(columns like: movie_id,movie_title,director_id,year_released,genre_code,rating_code,original_language_code,book_id,runtime,description)</small>
+            </label>
+            <input type="file" name="csv_file" id="movies_csv" accept=".csv" class="form-control" required>
         </div>
+        <button type="submit" name="submit" class="btn btn-primary">Import Movies</button>
+    </form>
 
+    <hr>
+
+    <h2>Import 2: Actors</h2>
+    <form action="Import_Data.php" method="post" enctype="multipart/form-data" class="form-group">
+        <input type="hidden" name="table" value="actor">
         <div class="form-group">
-            <label for="csv_file">CSV file:</label>
-            <input type="file" name="csv_file" id="csv_file" accept=".csv" class="form-control" required>
+            <label for="actors_csv">Actors CSV
+                <small>(columns: actor_id,fname,lname,minit,DOB)</small>
+            </label>
+            <input type="file" name="csv_file" id="actors_csv" accept=".csv" class="form-control" required>
         </div>
+        <button type="submit" name="submit" class="btn btn-primary">Import Actors</button>
+    </form>
 
-        <button type="submit" name="submit" class="btn btn-primary">Import</button>
+    <hr>
+
+    <h2>Import 3: Casting (Movie ↔ Actor)</h2>
+    <form action="Import_Data.php" method="post" enctype="multipart/form-data" class="form-group">
+        <input type="hidden" name="table" value="casting">
+        <div class="form-group">
+            <label for="casting_csv">Casting CSV
+                <small>(columns: movie_id,actor_id)</small>
+            </label>
+            <input type="file" name="csv_file" id="casting_csv" accept=".csv" class="form-control" required>
+        </div>
+        <button type="submit" name="submit" class="btn btn-primary">Import Casting</button>
     </form>
 
 <?php
@@ -51,19 +62,11 @@ if (!isset($_POST['submit'])): ?>
 else:
 
     // 1. Validate table name (whitelist so nobody can inject)
+    // Only allow the THREE tables required for the project imports
     $allowedTables = [
-        "actor",
-        "director",
-        "genre",
-        "rating",
-        "streaming",
-        "movies",
-        "casting",
-        "movie_streaming",
-        "award",
-        "movie_awards",
-        "language",
-        "based_on_book"
+            "movies",
+            "actor",
+            "casting"
     ];
 
     $table = $_POST['table'] ?? '';
