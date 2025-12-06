@@ -47,6 +47,19 @@ ORDER BY genre, avg rating
      | Carrie-Anne Moss         | 1988-11-06        |
      |__________________________|___________________|
 */
+SELECT
+    m.movie_title,
+    CONCAT(a.fname, ' ', a.lname) AS actor_name,
+    a.DOB
+FROM Movies m
+JOIN Casting c
+    ON m.movie_id = c.movie_id
+JOIN Actor a
+    ON c.actor_id = a.actor_id
+ORDER BY
+    m.movie_title,
+    a.lname,
+    a.fname;
 /* ---------------------------------- Angelo ---------------------------------- */
 /*
      English
