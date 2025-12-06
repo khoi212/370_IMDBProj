@@ -67,3 +67,11 @@ ORDER BY genre, avg rating
      | The Orphanage           | 2007          |
      |_________________________|_______________|
 */
+SELECT
+    l.language_description AS language,
+    m.movie_title,
+    m.year_released
+FROM Movies m
+JOIN Language l
+    ON m.original_language_code = l.original_language_code
+ORDER BY l.language_description, m.year_released, m.movie_title;
