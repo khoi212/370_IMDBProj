@@ -1,15 +1,14 @@
 genre_code,genre_description
-ROM,Romance
-HOR,Horror
-COM,Comedy
+1,Romance
+2,Horror
+3,Comedy
 
 rating_code,rating_description
-PG,Parental Guidance
-PG13,Parents Strongly Cautioned
-R,Restricted
+1,Parental Guidance
+2,Parents Strongly Cautioned
+3,Restricted
 
 language_code,language_description
-ENG,English
-SPA,Spanish
-FRE,French
-
+1,English
+2,Spanish
+3,French
