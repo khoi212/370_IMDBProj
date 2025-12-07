@@ -4,16 +4,17 @@ director_id,director_fname,director_lname,director_minit,AVG_rating
 3,Quentin,Tarantino,C,8.7
 4,Greta,Gerwig,D,8.0
 5,Christopher,Nolan,E,8.9
+
 actor_id,fname,lname,minit,DOB
 1,Leonardo,DiCaprio,J,1974-11-11
 2,Scarlett,Johansson,L,1984-11-22
 3,Tom,Hanks,A,1956-07-09
 4,Emma,Stone,M,1988-11-06
 5,Denzel,Washington,W,1954-12-28
-movie_id,movie_title,director_id,year_released,genre_code,rating_code,original_language_code,book_id,runtime,description
-1,Eternal Love,1,2010,ROM,PG13,ENG,,125,A timeless romantic drama.
-2,Night Frights,2,2015,HOR,R,ENG,,110,Terrifying events unfold in a small town.
-3,Laugh Out Loud,3,2018,COM,PG,SPA,,95,A hilarious adventure of friends.
-4,Midnight Secrets,4,2020,HOR,PG13,FRE,,102,Suspenseful thriller with hidden truths.
-5,Love & Laughter,5,2022,ROM,PG,ENG,,118,Romantic comedy with unexpected twists.
 
+movie_id,movie_title,director_id,year_released,genre_code,rating_code,original_language_code,book_id,runtime,description
+1,Eternal Love,1,2010,1,2,1,,125,A timeless romantic drama.
+2,Night Frights,2,2015,2,3,1,,110,Terrifying events unfold in a small town.
+3,Laugh Out Loud,3,2018,3,1,2,,95,A hilarious adventure of friends.
+4,Midnight Secrets,4,2020,2,2,3,,102,Suspenseful thriller with hidden truths.
+5,Love & Laughter,5,2022,1,1,1,,118,Romantic comedy with unexpected twists.
