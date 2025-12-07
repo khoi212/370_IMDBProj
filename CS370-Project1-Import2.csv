@@ -4,9 +4,10 @@ id,movie_id,award_id
 3,3,3
 4,4,1
 5,5,2
+
 id,movie_id,streaming_code
-1,1,NET
-2,2,HUL
-3,3,DIS
-4,4,AMZ
-5,5,NET
+1,1,1
+2,2,2
+3,3,3
+4,4,4
+5,5,1
