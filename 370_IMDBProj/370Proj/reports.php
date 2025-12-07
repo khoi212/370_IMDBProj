@@ -9,22 +9,23 @@ Katie McLaughlin, Lakiya, Gelo, Aaron, Dalston, Khoi
 /* 
      Action
      _________________________________________
-     | movie_title             | avg_rating  |
+     | movie_title             |year_released|
      |_________________________|_____________|
-     | The Dark Knight         | 9.1         |
-     | Mad Max: Fury Road      | 8.5         |
+     | The Dark Knight         | 2006        |
+     | Mad Max: Fury Road      | 2006        |
      |_______________________________________|
      Comedy
      _________________________________________
-     | movie_title             | avg_rating  |
+     | movie_title             |year_released|
      |_________________________|_____________|
-     | The Grand Budapest Hotel| 8.1         |
-     | Superbad                | 7.6         |
+     | The Grand Budapest Hotel| 2006        |
+     | Superbad                | 2006        |
      |_______________________________________|
 */
-SELECT genre, movie title, avg rating, year
-FROM movies table                                   **need to combine(join) movies and genre tables
-ORDER BY genre, avg rating
+SELECT g.genre_description, m.movie_title, m.year_released
+FROM Movies m                                  
+JOIN genre g ON m.genre_code = g.genre_code
+ORDER BY g.genre_description ASC, m.year_released ASC;
 
 
 /* ---------------------------------- Lakiya ---------------------------------- */
