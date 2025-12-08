@@ -1,4 +1,5 @@
 <?php
+global $connection;
 require "database.php";
 ?>
 
@@ -65,5 +66,4 @@ ORDER BY movie_title");
 <?php
 $connection->close();
 ?>
-
 
