@@ -1,4 +1,5 @@
-<?php require "database.php"; ?>
+<?php global $connection;
+require "database.php"; ?>
 
     <!DOCTYPE html>
     <link rel="stylesheet" href="lux.min.css">
