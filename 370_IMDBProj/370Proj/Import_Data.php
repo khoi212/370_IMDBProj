@@ -16,7 +16,6 @@ require "Database.php";   // provides $connection (mysqli)
 <?php
 // ----------------- Helper functions -----------------
 
-// Check if a row is effectively empty (all cells blank)
 function row_is_empty(array $row): bool {
     foreach ($row as $cell) {
         if (trim((string)$cell) !== '') {
@@ -26,7 +25,6 @@ function row_is_empty(array $row): bool {
     return true;
 }
 
-// Normalize a header row (trimmed values, handles null)
 function normalize_header(array $row): array {
     $out = [];
     foreach ($row as $cell) {
@@ -35,7 +33,7 @@ function normalize_header(array $row): array {
     return $out;
 }
 
-// ----------------- Show forms (no POST yet) -----------------
+// ----------------- Show forms -----------------
 if (!isset($_POST['submit'])): ?>
 
     <h2>Import 1: Directors, Actors, Movies</h2>
@@ -73,17 +71,14 @@ if (!isset($_POST['submit'])): ?>
     </form>
 
 <?php
-// ----------------- PROCESSING LOGIC -----------------
 else:
 
-    // 1. Validate import type
     $importType = $_POST['import_type'] ?? '';
     if (!in_array($importType, ['1', '2', '3'], true)) {
         echo "<div class='alert alert-danger'>Invalid import type.</div>";
         exit;
     }
 
-    // 2. Check upload
     if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
         echo "<div class='alert alert-danger'>Error uploading file.</div>";
         exit;
@@ -92,14 +87,12 @@ else:
     $filename = $_FILES['csv_file']['name'];
     $tmpPath  = $_FILES['csv_file']['tmp_name'];
 
-    // 3. Ensure CSV
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     if ($ext !== 'csv') {
         echo "<div class='alert alert-danger'>Only .csv files are allowed.</div>";
         exit;
     }
 
-    // 4. Open file
     if (($handle = fopen($tmpPath, 'r')) === false) {
         echo "<div class='alert alert-danger'>Could not open uploaded file.</div>";
         exit;
@@ -107,12 +100,12 @@ else:
 
     $summary = [];
 
-    /* ========== IMPORT TYPE 1: directors + actors + movies ========== */
+    /* ========== IMPORT TYPE 1: Directors, Actors, Movies ========== */
     if ($importType === '1') {
         global $connection;
 
         $stmtDirector = $connection->prepare(
-                "INSERT INTO director (director_id, director_fname, director_lname, director_minit, avg_rating)
+                "INSERT INTO Director (director_id, director_fname, director_lname, director_minit, avg_rating)
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 director_fname = VALUES(director_fname),
@@ -122,7 +115,7 @@ else:
         );
 
         $stmtActor = $connection->prepare(
-                "INSERT INTO actor (actor_id, fname, lname, minit, DOB)
+                "INSERT INTO Actor (actor_id, fname, lname, minit, DOB)
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 fname = VALUES(fname),
@@ -132,7 +125,7 @@ else:
         );
 
         $stmtMovie = $connection->prepare(
-                "INSERT INTO movies (movie_id, movie_title, director_id, year_released,
+                "INSERT INTO Movies (movie_id, movie_title, director_id, year_released,
                                  genre_code, rating_code, original_language_code,
                                  book_id, runtime, description)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -172,7 +165,6 @@ else:
 
             $norm = normalize_header($row);
 
-            // Detect section headers
             if ($norm === ['director_id','director_fname','director_lname','director_minit','AVG_rating']) {
                 $section = 'director';
                 continue;
@@ -187,14 +179,12 @@ else:
                 continue;
             }
 
-            // Process Directors
             if ($section === 'director') {
                 if (count($row) < 5) { $summary['director_skipped']++; continue; }
 
                 $director_id    = (int)trim((string)$row[0]);
                 $director_fname = trim((string)$row[1]);
                 $director_lname = trim((string)$row[2]);
-                // truncate to 1 char for safety
                 $director_minit = substr(trim((string)$row[3]), 0, 1);
                 $avg_rating     = (float)trim((string)$row[4]);
 
@@ -222,20 +212,17 @@ else:
                     $summary['director_skipped']++;
                 }
 
-                // Process Actors
             } elseif ($section === 'actor') {
                 if (count($row) < 5) { $summary['actor_skipped']++; continue; }
 
                 $actor_id = (int)trim((string)$row[0]);
                 $fname    = trim((string)$row[1]);
                 $lname    = trim((string)$row[2]);
-                // force 1-character middle initial for safety
                 $minit    = substr(trim((string)$row[3]), 0, 1);
 
-                // Validate DOB; if it doesn't look like YYYY-MM-DD, store NULL instead
                 $dobRaw = trim((string)$row[4]);
                 if ($dobRaw === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobRaw)) {
-                    $dob = null; // let MySQL store NULL instead of crashing
+                    $dob = null;
                 } else {
                     $dob = $dobRaw;
                 }
@@ -264,7 +251,6 @@ else:
                     $summary['actor_skipped']++;
                 }
 
-                // Process Movies
             } elseif ($section === 'movies') {
                 if (count($row) < 10) { $summary['movies_skipped']++; continue; }
 
@@ -274,7 +260,7 @@ else:
                 $year        = trim((string)$row[3]);
                 $genre_code  = trim((string)$row[4]);
                 $rating_code = trim((string)$row[5]);
-                $lang_code   = trim((string)$row[6]); // maps to original_language_code
+                $lang_code   = trim((string)$row[6]);
                 $book_id_raw = trim((string)$row[7]);
                 $runtime     = (int)trim((string)$row[8]);
                 $desc        = trim((string)$row[9]);
@@ -324,19 +310,19 @@ else:
         echo "<li>Movies – Inserted: {$summary['movies_inserted']}, Updated: {$summary['movies_updated']}, Skipped: {$summary['movies_skipped']}</li>";
         echo "</ul>";
 
-        /* ========== IMPORT TYPE 2: movie_awards + movie_streaming ========== */
+    /* ========== IMPORT TYPE 2: Movie_awards, Movie_streaming ========== */
     } elseif ($importType === '2') {
         global $connection;
 
         $stmtMovieAwards = $connection->prepare(
-                "INSERT INTO movie_awards (movie_id, award_id)
+                "INSERT INTO Movie_awards (movie_id, award_id)
              VALUES (?, ?)
              ON DUPLICATE KEY UPDATE
                 award_id = VALUES(award_id)"
         );
 
         $stmtMovieStreaming = $connection->prepare(
-                "INSERT INTO movie_streaming (movie_id, streaming_code)
+                "INSERT INTO Movie_streaming (movie_id, streaming_code)
              VALUES (?, ?)
              ON DUPLICATE KEY UPDATE
                 streaming_code = VALUES(streaming_code)"
@@ -436,26 +422,26 @@ else:
         echo "<li>Movie Streaming – Inserted: {$summary['streaming_inserted']}, Updated: {$summary['streaming_updated']}, Skipped: {$summary['streaming_skipped']}</li>";
         echo "</ul>";
 
-        /* ========== IMPORT TYPE 3: genre + rating + language ========== */
+    /* ========== IMPORT TYPE 3: Genre, Rating, Language ========== */
     } elseif ($importType === '3') {
         global $connection;
 
         $stmtGenre = $connection->prepare(
-                "INSERT INTO genre (genre_code, genre_description)
+                "INSERT INTO Genre (genre_code, genre_description)
              VALUES (?, ?)
              ON DUPLICATE KEY UPDATE
                 genre_description = VALUES(genre_description)"
         );
 
         $stmtRating = $connection->prepare(
-                "INSERT INTO rating (rating_code, rating_description)
+                "INSERT INTO Rating (rating_code, rating_description)
              VALUES (?, ?)
              ON DUPLICATE KEY UPDATE
                 rating_description = VALUES(rating_description)"
         );
 
         $stmtLanguage = $connection->prepare(
-                "INSERT INTO language (original_language_code, language_description)
+                "INSERT INTO Language (original_language_code, language_description)
              VALUES (?, ?)
              ON DUPLICATE KEY UPDATE
                 language_description = VALUES(language_description)"
@@ -501,92 +487,4 @@ else:
             if ($section === 'genre') {
                 if (count($row) < 2) { $summary['genre_skipped']++; continue; }
 
-                $code = trim((string)$row[0]);
-                $desc = trim((string)$row[1]);
-
-                if ($code === '') { $summary['genre_skipped']++; continue; }
-
-                $stmtGenre->bind_param("ss", $code, $desc);
-
-                if (!$stmtGenre->execute()) {
-                    $summary['genre_skipped']++;
-                    continue;
-                }
-
-                if ($stmtGenre->affected_rows === 1) {
-                    $summary['genre_inserted']++;
-                } elseif ($stmtGenre->affected_rows === 2) {
-                    $summary['genre_updated']++;
-                } else {
-                    $summary['genre_skipped']++;
-                }
-
-            } elseif ($section === 'rating') {
-                if (count($row) < 2) { $summary['rating_skipped']++; continue; }
-
-                $code = trim((string)$row[0]);
-                $desc = trim((string)$row[1]);
-
-                if ($code === '') { $summary['rating_skipped']++; continue; }
-
-                $stmtRating->bind_param("ss", $code, $desc);
-
-                if (!$stmtRating->execute()) {
-                    $summary['rating_skipped']++;
-                    continue;
-                }
-
-                if ($stmtRating->affected_rows === 1) {
-                    $summary['rating_inserted']++;
-                } elseif ($stmtRating->affected_rows === 2) {
-                    $summary['rating_updated']++;
-                } else {
-                    $summary['rating_skipped']++;
-                }
-
-            } elseif ($section === 'language') {
-                if (count($row) < 2) { $summary['language_skipped']++; continue; }
-
-                $code = trim((string)$row[0]);
-                $desc = trim((string)$row[1]);
-
-                if ($code === '') { $summary['language_skipped']++; continue; }
-
-                $stmtLanguage->bind_param("ss", $code, $desc);
-
-                if (!$stmtLanguage->execute()) {
-                    $summary['language_skipped']++;
-                    continue;
-                }
-
-                if ($stmtLanguage->affected_rows === 1) {
-                    $summary['language_inserted']++;
-                } elseif ($stmtLanguage->affected_rows === 2) {
-                    $summary['language_updated']++;
-                } else {
-                    $summary['language_skipped']++;
-                }
-            }
-        }
-
-        fclose($handle);
-        $stmtGenre->close();
-        $stmtRating->close();
-        $stmtLanguage->close();
-
-        echo "<div class='alert alert-success'><strong>Import 3 complete.</strong></div>";
-        echo "<ul>";
-        echo "<li>Genres – Inserted: {$summary['genre_inserted']}, Updated: {$summary['genre_updated']}, Skipped: {$summary['genre_skipped']}</li>";
-        echo "<li>Ratings – Inserted: {$summary['rating_inserted']}, Updated: {$summary['rating_updated']}, Skipped: {$summary['rating_skipped']}</li>";
-        echo "<li>Languages – Inserted: {$summary['language_inserted']}, Updated: {$summary['language_updated']}, Skipped: {$summary['language_skipped']}</li>";
-        echo "</ul>";
-    }
-
-    fclose($handle);
-    $connection->close();
-
-endif;
-?>
-
-</body>
-</html>
+                $code = trim((string
