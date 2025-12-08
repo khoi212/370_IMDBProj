@@ -9,22 +9,23 @@ Katie McLaughlin, Lakiya, Gelo, Aaron, Dalston, Khoi
 /* 
      Action
      _________________________________________
-     | movie_title             | avg_rating  |
+     | movie_title             |year_released|
      |_________________________|_____________|
-     | The Dark Knight         | 9.1         |
-     | Mad Max: Fury Road      | 8.5         |
+     | The Dark Knight         | 2006        |
+     | Mad Max: Fury Road      | 2006        |
      |_______________________________________|
      Comedy
      _________________________________________
-     | movie_title             | avg_rating  |
+     | movie_title             |year_released|
      |_________________________|_____________|
-     | The Grand Budapest Hotel| 8.1         |
-     | Superbad                | 7.6         |
+     | The Grand Budapest Hotel| 2006        |
+     | Superbad                | 2006        |
      |_______________________________________|
 */
-SELECT genre, movie title, avg rating, year
-FROM movies table                                   **need to combine(join) movies and genre tables
-ORDER BY genre, avg rating
+SELECT g.genre_description, m.movie_title, m.year_released
+FROM Movies m                                  
+JOIN genre g ON m.genre_code = g.genre_code
+ORDER BY g.genre_description ASC, m.year_released ASC;
 
 
 /* ---------------------------------- Lakiya ---------------------------------- */
@@ -47,6 +48,19 @@ ORDER BY genre, avg rating
      | Carrie-Anne Moss         | 1988-11-06        |
      |__________________________|___________________|
 */
+SELECT
+    m.movie_title,
+    CONCAT(a.fname, ' ', a.lname) AS actor_name,
+    a.DOB
+FROM Movies m
+JOIN Casting c
+    ON m.movie_id = c.movie_id
+JOIN Actor a
+    ON c.actor_id = a.actor_id
+ORDER BY
+    m.movie_title,
+    a.lname,
+    a.fname;
 /* ---------------------------------- Angelo ---------------------------------- */
 /*
      English
@@ -67,3 +81,11 @@ ORDER BY genre, avg rating
      | The Orphanage           | 2007          |
      |_________________________|_______________|
 */
+SELECT
+    l.language_description AS language,
+    m.movie_title,
+    m.year_released
+FROM Movies m
+JOIN Language l
+    ON m.original_language_code = l.original_language_code
+ORDER BY l.language_description, m.year_released, m.movie_title;
