@@ -1,7 +1,5 @@
 <?php
 // Import_Data.php
-// NOTE: make sure the case matches your actual file: "database.php" or "Database.php"
-global $connection;
 require "Database.php";   // provides $connection (mysqli)
 ?>
 <!DOCTYPE html>
@@ -13,29 +11,31 @@ require "Database.php";   // provides $connection (mysqli)
 </head>
 <body>
 <p><a href="index.php">Back to Home</a></p>
-<h1>Import CSV Data</h1>
+<h1>IMPORT CSV DATA</h1>
 
 <?php
-// Helper: check if a row is effectively empty (all cells blank)
+// ----------------- Helper functions -----------------
+
+// Check if a row is effectively empty (all cells blank)
 function row_is_empty(array $row): bool {
     foreach ($row as $cell) {
-        if (trim($cell) !== '') {
+        if (trim((string)$cell) !== '') {
             return false;
         }
     }
     return true;
 }
 
-// Helper: normalize a header row (trimmed values)
+// Normalize a header row (trimmed values, handles null)
 function normalize_header(array $row): array {
     $out = [];
     foreach ($row as $cell) {
-        $out[] = trim($cell);
+        $out[] = trim((string)$cell);
     }
     return $out;
 }
 
-// If no form submission yet, show the THREE import forms
+// ----------------- Show forms (no POST yet) -----------------
 if (!isset($_POST['submit'])): ?>
 
     <h2>Import 1: Directors, Actors, Movies</h2>
@@ -73,18 +73,17 @@ if (!isset($_POST['submit'])): ?>
     </form>
 
 <?php
-// --- PROCESSING LOGIC ---
+// ----------------- PROCESSING LOGIC -----------------
 else:
 
     // 1. Validate import type
-    $importType = isset($_POST['import_type']) ? $_POST['import_type'] : '';
-
+    $importType = $_POST['import_type'] ?? '';
     if (!in_array($importType, ['1', '2', '3'], true)) {
         echo "<div class='alert alert-danger'>Invalid import type.</div>";
         exit;
     }
 
-    // 2. Check for upload errors
+    // 2. Check upload
     if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
         echo "<div class='alert alert-danger'>Error uploading file.</div>";
         exit;
@@ -93,26 +92,25 @@ else:
     $filename = $_FILES['csv_file']['name'];
     $tmpPath  = $_FILES['csv_file']['tmp_name'];
 
-    // 3. Ensure file is CSV
+    // 3. Ensure CSV
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     if ($ext !== 'csv') {
         echo "<div class='alert alert-danger'>Only .csv files are allowed.</div>";
         exit;
     }
 
-    // 4. Open the CSV
+    // 4. Open file
     if (($handle = fopen($tmpPath, 'r')) === false) {
         echo "<div class='alert alert-danger'>Could not open uploaded file.</div>";
         exit;
     }
 
-    // Prepare counters for reporting
     $summary = [];
 
-    /* ===================== IMPORT TYPE 1 ===================== */
+    /* ========== IMPORT TYPE 1: directors + actors + movies ========== */
     if ($importType === '1') {
+        global $connection;
 
-        // Prepare statements for director, actor, movies
         $stmtDirector = $connection->prepare(
                 "INSERT INTO director (director_id, director_fname, director_lname, director_minit, avg_rating)
              VALUES (?, ?, ?, ?, ?)
@@ -156,8 +154,7 @@ else:
             exit;
         }
 
-        $section = null; // "director", "actor", "movies"
-
+        $section = null;
         $summary = [
                 'director_inserted' => 0,
                 'director_updated'  => 0,
@@ -170,10 +167,8 @@ else:
                 'movies_skipped'    => 0,
         ];
 
-        while (($row = fgetcsv($handle)) !== false) {
-            if (row_is_empty($row)) {
-                continue;
-            }
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+            if (row_is_empty($row)) continue;
 
             $norm = normalize_header($row);
 
@@ -192,22 +187,18 @@ else:
                 continue;
             }
 
-            // Process data rows based on current section
+            // Process Directors
             if ($section === 'director') {
-                if (count($row) < 5) {
-                    $summary['director_skipped']++;
-                    continue;
-                }
-                $director_id    = trim($row[0]);
-                $director_fname = trim($row[1]);
-                $director_lname = trim($row[2]);
-                $director_minit = trim($row[3]);
-                $avg_rating     = trim($row[4]);
+                if (count($row) < 5) { $summary['director_skipped']++; continue; }
 
-                if ($director_id === '') {
-                    $summary['director_skipped']++;
-                    continue;
-                }
+                $director_id    = (int)trim((string)$row[0]);
+                $director_fname = trim((string)$row[1]);
+                $director_lname = trim((string)$row[2]);
+                // truncate to 1 char for safety
+                $director_minit = substr(trim((string)$row[3]), 0, 1);
+                $avg_rating     = (float)trim((string)$row[4]);
+
+                if ($director_id === 0) { $summary['director_skipped']++; continue; }
 
                 $stmtDirector->bind_param(
                         "isssd",
@@ -231,22 +222,25 @@ else:
                     $summary['director_skipped']++;
                 }
 
+                // Process Actors
             } elseif ($section === 'actor') {
+                if (count($row) < 5) { $summary['actor_skipped']++; continue; }
 
-                if (count($row) < 5) {
-                    $summary['actor_skipped']++;
-                    continue;
-                }
-                $actor_id = trim($row[0]);
-                $fname    = trim($row[1]);
-                $lname    = trim($row[2]);
-                $minit    = trim($row[3]);
-                $dob      = trim($row[4]);
+                $actor_id = (int)trim((string)$row[0]);
+                $fname    = trim((string)$row[1]);
+                $lname    = trim((string)$row[2]);
+                // force 1-character middle initial for safety
+                $minit    = substr(trim((string)$row[3]), 0, 1);
 
-                if ($actor_id === '') {
-                    $summary['actor_skipped']++;
-                    continue;
+                // Validate DOB; if it doesn't look like YYYY-MM-DD, store NULL instead
+                $dobRaw = trim((string)$row[4]);
+                if ($dobRaw === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dobRaw)) {
+                    $dob = null; // let MySQL store NULL instead of crashing
+                } else {
+                    $dob = $dobRaw;
                 }
+
+                if ($actor_id === 0) { $summary['actor_skipped']++; continue; }
 
                 $stmtActor->bind_param(
                         "issss",
@@ -270,31 +264,24 @@ else:
                     $summary['actor_skipped']++;
                 }
 
+                // Process Movies
             } elseif ($section === 'movies') {
+                if (count($row) < 10) { $summary['movies_skipped']++; continue; }
 
-                if (count($row) < 10) {
-                    $summary['movies_skipped']++;
-                    continue;
-                }
+                $movie_id    = (int)trim((string)$row[0]);
+                $title       = trim((string)$row[1]);
+                $director_id = (int)trim((string)$row[2]);
+                $year        = trim((string)$row[3]);
+                $genre_code  = trim((string)$row[4]);
+                $rating_code = trim((string)$row[5]);
+                $lang_code   = trim((string)$row[6]); // maps to original_language_code
+                $book_id_raw = trim((string)$row[7]);
+                $runtime     = (int)trim((string)$row[8]);
+                $desc        = trim((string)$row[9]);
 
-                $movie_id    = trim($row[0]);
-                $title       = trim($row[1]);
-                $director_id = trim($row[2]);
-                $year        = trim($row[3]);
-                $genre_code  = trim($row[4]);
-                $rating_code = trim($row[5]);
-                $lang_code   = trim($row[6]); // maps to original_language_code
-                $book_id     = trim($row[7]);
-                $runtime     = trim($row[8]);
-                $desc        = trim($row[9]);
+                if ($movie_id === 0) { $summary['movies_skipped']++; continue; }
 
-                if ($movie_id === '') {
-                    $summary['movies_skipped']++;
-                    continue;
-                }
-
-                // Allow NULL book_id
-                $book_id_param = ($book_id === '') ? null : $book_id;
+                $book_id_param = ($book_id_raw === '') ? null : (int)$book_id_raw;
 
                 $stmtMovie->bind_param(
                         "isisiisiis",
@@ -337,8 +324,9 @@ else:
         echo "<li>Movies – Inserted: {$summary['movies_inserted']}, Updated: {$summary['movies_updated']}, Skipped: {$summary['movies_skipped']}</li>";
         echo "</ul>";
 
-        /* ===================== IMPORT TYPE 2 ===================== */
+        /* ========== IMPORT TYPE 2: movie_awards + movie_streaming ========== */
     } elseif ($importType === '2') {
+        global $connection;
 
         $stmtMovieAwards = $connection->prepare(
                 "INSERT INTO movie_awards (movie_id, award_id)
@@ -360,25 +348,21 @@ else:
             exit;
         }
 
-        $section = null; // "movie_awards", "movie_streaming"
-
+        $section = null;
         $summary = [
-                'awards_inserted'   => 0,
-                'awards_updated'    => 0,
-                'awards_skipped'    => 0,
-                'streaming_inserted'=> 0,
-                'streaming_updated' => 0,
-                'streaming_skipped' => 0,
+                'awards_inserted'    => 0,
+                'awards_updated'     => 0,
+                'awards_skipped'     => 0,
+                'streaming_inserted' => 0,
+                'streaming_updated'  => 0,
+                'streaming_skipped'  => 0,
         ];
 
-        while (($row = fgetcsv($handle)) !== false) {
-            if (row_is_empty($row)) {
-                continue;
-            }
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+            if (row_is_empty($row)) continue;
 
             $norm = normalize_header($row);
 
-            // Section headers
             if ($norm === ['id','movie_id','award_id']) {
                 $section = 'movie_awards';
                 continue;
@@ -389,15 +373,12 @@ else:
             }
 
             if ($section === 'movie_awards') {
-                if (count($row) < 3) {
-                    $summary['awards_skipped']++;
-                    continue;
-                }
+                if (count($row) < 3) { $summary['awards_skipped']++; continue; }
 
-                $movie_id = trim($row[1]);
-                $award_id = trim($row[2]);
+                $movie_id = (int)trim((string)$row[1]);
+                $award_id = (int)trim((string)$row[2]);
 
-                if ($movie_id === '' || $award_id === '') {
+                if ($movie_id === 0 || $award_id === 0) {
                     $summary['awards_skipped']++;
                     continue;
                 }
@@ -418,20 +399,16 @@ else:
                 }
 
             } elseif ($section === 'movie_streaming') {
-                if (count($row) < 3) {
+                if (count($row) < 3) { $summary['streaming_skipped']++; continue; }
+
+                $movie_id       = (int)trim((string)$row[1]);
+                $streaming_code = trim((string)$row[2]);
+
+                if ($movie_id === 0 || $streaming_code === '') {
                     $summary['streaming_skipped']++;
                     continue;
                 }
 
-                $movie_id       = trim($row[1]);
-                $streaming_code = trim($row[2]); // assumes streaming.streaming_code is compatible
-
-                if ($movie_id === '' || $streaming_code === '') {
-                    $summary['streaming_skipped']++;
-                    continue;
-                }
-
-                // Treat streaming_code as string (e.g. NET, HUL, etc.)
                 $stmtMovieStreaming->bind_param("is", $movie_id, $streaming_code);
 
                 if (!$stmtMovieStreaming->execute()) {
@@ -459,8 +436,9 @@ else:
         echo "<li>Movie Streaming – Inserted: {$summary['streaming_inserted']}, Updated: {$summary['streaming_updated']}, Skipped: {$summary['streaming_skipped']}</li>";
         echo "</ul>";
 
-        /* ===================== IMPORT TYPE 3 ===================== */
+        /* ========== IMPORT TYPE 3: genre + rating + language ========== */
     } elseif ($importType === '3') {
+        global $connection;
 
         $stmtGenre = $connection->prepare(
                 "INSERT INTO genre (genre_code, genre_description)
@@ -489,8 +467,7 @@ else:
             exit;
         }
 
-        $section = null; // "genre", "rating", "language"
-
+        $section = null;
         $summary = [
                 'genre_inserted'    => 0,
                 'genre_updated'     => 0,
@@ -503,10 +480,8 @@ else:
                 'language_skipped'  => 0,
         ];
 
-        while (($row = fgetcsv($handle)) !== false) {
-            if (row_is_empty($row)) {
-                continue;
-            }
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+            if (row_is_empty($row)) continue;
 
             $norm = normalize_header($row);
 
@@ -524,18 +499,12 @@ else:
             }
 
             if ($section === 'genre') {
-                if (count($row) < 2) {
-                    $summary['genre_skipped']++;
-                    continue;
-                }
+                if (count($row) < 2) { $summary['genre_skipped']++; continue; }
 
-                $code = trim($row[0]);
-                $desc = trim($row[1]);
+                $code = trim((string)$row[0]);
+                $desc = trim((string)$row[1]);
 
-                if ($code === '') {
-                    $summary['genre_skipped']++;
-                    continue;
-                }
+                if ($code === '') { $summary['genre_skipped']++; continue; }
 
                 $stmtGenre->bind_param("ss", $code, $desc);
 
@@ -553,18 +522,12 @@ else:
                 }
 
             } elseif ($section === 'rating') {
-                if (count($row) < 2) {
-                    $summary['rating_skipped']++;
-                    continue;
-                }
+                if (count($row) < 2) { $summary['rating_skipped']++; continue; }
 
-                $code = trim($row[0]);
-                $desc = trim($row[1]);
+                $code = trim((string)$row[0]);
+                $desc = trim((string)$row[1]);
 
-                if ($code === '') {
-                    $summary['rating_skipped']++;
-                    continue;
-                }
+                if ($code === '') { $summary['rating_skipped']++; continue; }
 
                 $stmtRating->bind_param("ss", $code, $desc);
 
@@ -582,18 +545,12 @@ else:
                 }
 
             } elseif ($section === 'language') {
-                if (count($row) < 2) {
-                    $summary['language_skipped']++;
-                    continue;
-                }
+                if (count($row) < 2) { $summary['language_skipped']++; continue; }
 
-                $code = trim($row[0]); // goes into original_language_code
-                $desc = trim($row[1]);
+                $code = trim((string)$row[0]);
+                $desc = trim((string)$row[1]);
 
-                if ($code === '') {
-                    $summary['language_skipped']++;
-                    continue;
-                }
+                if ($code === '') { $summary['language_skipped']++; continue; }
 
                 $stmtLanguage->bind_param("ss", $code, $desc);
 
@@ -625,6 +582,7 @@ else:
         echo "</ul>";
     }
 
+    fclose($handle);
     $connection->close();
 
 endif;
